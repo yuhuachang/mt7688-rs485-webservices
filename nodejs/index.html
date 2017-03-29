@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>RS485 Modbus RTU Control for Taiwan Hitachi Air Conditioner on MTK Linkit Smart 7688 Duo</title>
+  </head>
+  <body>
+
+    Slave Address:
+    <input id="slave_addr" value="1" />
+
+    <table border="1">
+      <tr>
+        <th>Register Address</th>
+        <th>Item</th>
+        <th>Description</th>
+        <th>Value</th>
+        <th>Method</th>
+      </tr>
+      <tr>
+        <td>0x00</td>
+        <td>室內溫度值</td>
+        <td>顯示室內溫度值，精度1℃。</td>
+        <td><input id="value0" /></td>
+        <td>
+          <button onclick="read_register('0')">Read (GET)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x20</td>
+        <td>電源開關狀態</td>
+        <td>0:關閉電源，1:開啟電源。</td>
+        <td><input id="value20" /></td>
+        <td>
+          <button onclick="read_register('20')">Read (GET)</button>
+          <button onclick="write_register('20')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x21</td>
+        <td>運轉模式</td>
+        <td>0:冷氣，1:除溼，2:送風，3:自動，4:暖氣</td>
+        <td><input id="value21" /></td>
+        <td>
+          <button onclick="read_register('21')">Read (GET)</button>
+          <button onclick="write_register('21')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x22</td>
+        <td>風速設定模式</td>
+        <td>5:自動,4:強,3:弱,1:微,7:靜</td>
+        <td><input id="value22" /></td>
+        <td>
+          <button onclick="read_register('22')">Read (GET)</button>
+          <button onclick="write_register('22')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x23</td>
+        <td>溫度設定值</td>
+        <td>溫度設定值(16℃-32℃)，精度1℃</td>
+        <td><input id="value23" /></td>
+        <td>
+          <button onclick="read_register('23')">Read (GET)</button>
+          <button onclick="write_register('23')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x24</td>
+        <td>舒眠模式開關狀態</td>
+        <td>0:關閉，非0之值代表舒眠分鐘，最大值1440</td>
+        <td><input id="value24" /></td>
+        <td>
+          <button onclick="read_register('24')">Read (GET)</button>
+          <button onclick="write_register('24')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x25</td>
+        <td>Fuzzy設定模式</td>
+        <td>0:關閉，1:開啟</td>
+        <td><input id="value25" /></td>
+        <td>
+          <button onclick="read_register('25')">Read (GET)</button>
+          <button onclick="write_register('25')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x29</td>
+        <td>定時開關機時間</td>
+        <td>0:停止,非0之值代表定時分鐘時間,最大值 1440</td>
+        <td><input id="value29" /></td>
+        <td>
+          <button onclick="read_register('29')">Read (GET)</button>
+          <button onclick="write_register('29')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x2A</td>
+        <td>上下吹風自動轉向狀態</td>
+        <td>0:停止,非0:上下吹風自動轉向角度模式</td>
+        <td><input id="value2A" /></td>
+        <td>
+          <button onclick="read_register('2A')">Read (GET)</button>
+          <button onclick="write_register('2A')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x2B</td>
+        <td>左右吹風自動轉向狀態</td>
+        <td>0:停止,非0:左右吹風自動轉向角度模式</td>
+        <td><input id="value2B" /></td>
+        <td>
+          <button onclick="read_register('2B')">Read (GET)</button>
+          <button onclick="write_register('2B')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x2D</td>
+        <td>遙控器禁止狀態</td>
+        <td>0:許可，1:禁止</td>
+        <td><input id="value2D" /></td>
+        <td>
+          <button onclick="read_register('2D')">Read (GET)</button>
+          <button onclick="write_register('2D')">Write (PUT)</button>
+        </td>
+      </tr>
+      <tr>
+        <td>0x2E</td>
+        <td>室內機蜂鳴器禁止狀</td>
+        <td>0:許可，1:禁止</td>
+        <td><input id="value2E" /></td>
+        <td>
+          <button onclick="read_register('2E')">Read (GET)</button>
+          <button onclick="write_register('2E')">Write (PUT)</button>
+        </td>
+      </tr>
+    </table>
+    <h3>
+      RESTful Web Services Info:
+    </h3>
+    <p>
+    Server Port: 8080
+    </p>
+    <p>
+    Resource: We use URL path parameters like: /slave_address/register_address_in_hex
+    For example, read register 0x20 for slave 2 is "/2/20"
+    </p>
+    <p>
+    Use GET to read a register value and use PUT to write a register value.
+    When reading, request body is not used.
+    When writeing, the new value is writting in JSON format like this { "value": new_value }
+    where new_value is an integer value.
+    </p>
+    <p>
+    Reading action will return a JSON message in the response body like { "value": value }
+    where value is the returned value and an empty string if no response or error.
+    Writing action will return 0 after a successful execution and non-zero for error.
+    </p>
+    </pre>
+    <script>
+
+function read_register(register_addr) {
+  var slave_addr = document.getElementById("slave_addr");
+  var target = document.getElementById("value" + register_addr);
+
+  var xmlhttp = new XMLHttpRequest();
+  xmlhttp.onreadystatechange = function() {
+    if (this.readyState == XMLHttpRequest.DONE && this.status == 200) {
+      try {
+        var v = JSON.parse(xmlhttp.responseText);
+        target.value = v.value;
+      } catch (err) {
+        target.value = 'n/a';
+      }
+    }
+  };
+  xmlhttp.open("GET", "/" + slave_addr.value + "/" + register_addr, true);
+  xmlhttp.send();
+}
+
+function write_register(register_addr) {
+  var slave_addr = document.getElementById("slave_addr");
+  var target = document.getElementById("value" + register_addr);
+
+  var xmlhttp = new XMLHttpRequest();
+  xmlhttp.open("PUT", "/" + slave_addr.value + "/" + register_addr);
+  xmlhttp.setRequestHeader("Content-Type", "application/json");
+  xmlhttp.send(JSON.stringify(
+    { "value": target.value }
+  ));
+}
+    </script>
+  </body>
+</html>
