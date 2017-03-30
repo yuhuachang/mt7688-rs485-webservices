@@ -5,6 +5,8 @@
 // To enable ECMAScript 2015 features, use the following command to run:
 //   node --harmony app.js
 //
+// Put app.js and index.html file in /root/index.html
+//
 // Author: Yu-Hua Chang
 //
 "use strict";
@@ -16,7 +18,6 @@ const HTTP_PORT = 8080;
 // Import libraries
 const http = require('http');
 const url = require('url');
-const path = require('path');
 const SerialPort = require("serialport").SerialPort;
 const fs = require('fs');
 
@@ -126,7 +127,7 @@ const server = http.createServer((request, response) => {
     } else {
 
       // Get path name on the server's file system.
-      let filename = path.join(process.cwd(), '/index.html');
+      let filename = '/root/index.html';
 
       fs.exists(filename, (exists) => {
         if (exists) {
