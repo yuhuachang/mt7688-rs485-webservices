@@ -73,8 +73,8 @@ void setup() {
 }
 
 void loop() {
-  // Whenever a request is sent from MPU,
-  // it blocked here waiting for the whole action to complete.
+  // When a request is sent from MPU,
+  // it is blocked and waits for the whole action to complete.
   // We see the LED is on, indicating the board is busy.
   if (Serial1.available()) {
     digitalWrite(LED, HIGH);
@@ -103,50 +103,57 @@ void loop() {
     // Retry many times until the action is completed successfully.
     for (int retry = 1; retry <= RETRY; retry++) {
       if (function_code == 0x03) {
-        Serial.print("read holding registers at addr 0x");
-        Serial.println(register_addr);
+        Serial.print("read holding registers at register_addr 0x");
+        Serial.print(register_addr, HEX);
+        Serial.print(" on slave_addr 0x");
+        Serial.println(slave_addr, HEX);
 
         // All of our operations only need to read one byte.
         uint8_t result = node.readHoldingRegisters(register_addr, 1);
 
         if (result == node.ku8MBSuccess) {
           uint16_t value = node.getResponseBuffer(0);
-          Serial.print("value = ");
+          Serial.print("response value = ");
           Serial.println(value);
-          Serial1.println(value);
+
+          // Return only 8 bit unsigned integer value
+          // because, due to the spec, the return value will never exceed this size.
+          Serial1.write(value & 0xFF);
           break;
         } else {
           Serial.print("unsuccessfull read: ");
           Serial.println(result);
 
           if (retry >= RETRY) {
-            // If tried many times but still cannot get the correct result, return an empty string.
-            Serial1.println("");
+            // Return 0xFF after all attempts failed.
+            Serial1.write(0xFF);
           } else {
             // Wait a while before next attempt.
             delay(100);
           }
         }
       } else if (function_code == 0x06) {
-        Serial.print("write single registers at addr 0x");
-        Serial.print(register_addr);
+        Serial.print("write single register at addr 0x");
+        Serial.print(register_addr, HEX);
+        Serial.print(" on slave_addr 0x");
+        Serial.print(slave_addr, HEX);
         Serial.print(" to 0x");
-        Serial.println(register_value);
+        Serial.println(register_value, HEX);
 
         uint8_t result = node.writeSingleRegister(register_addr, register_value);
         if (result == 0) {
           Serial.println("write success");
 
           // Return zero means no error.
-          Serial1.println(0);
+          Serial1.write(0x00);
           break;
         } else {
-          Serial.print("write failed: ");
+          Serial.print("write failed. error code: ");
           Serial.println(result);
 
           if (retry >= RETRY) {
             // Return error code.
-            Serial1.println(result);
+            Serial1.write(result);
           } else {
             // Wait a while before next attempt.
             delay(100);
@@ -155,8 +162,16 @@ void loop() {
       }
     }
 
+    // Clear input
+    while (Serial1.available()) {
+      Serial1.read();
+    }
+
+    // Clear output
     Serial.flush();
     Serial1.flush();
+
+    // Completed
     digitalWrite(LED, LOW);
   }
 }

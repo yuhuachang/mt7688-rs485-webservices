@@ -12,9 +12,11 @@
 "use strict";
 process.title = 'node-app';
 
+////////////////////////////////////////////////////////////////////////////////
 // Settings
 const HTTP_PORT = 8080;
 
+////////////////////////////////////////////////////////////////////////////////
 // Import libraries
 const http = require('http');
 const url = require('url');
@@ -22,75 +24,95 @@ const SerialPort = require("serialport").SerialPort;
 const fs = require('fs');
 
 ////////////////////////////////////////////////////////////////////////////////
+// Request Queue
+const requestQueue = [];
+
+////////////////////////////////////////////////////////////////////////////////
 // open serial port to MCU
 const serial = new SerialPort("/dev/ttyS0", {
   baudrate: 57600
 });
 
-serial.on('error', (err) => {
-  console.log('SerialPort Error: ', err.message);
-})
-
 ////////////////////////////////////////////////////////////////////////////////
 // http server to server the static pages
 const server = http.createServer((request, response) => {
 
-  // retrieve request header, method, url, and body.
-  let headers = request.headers;
-  let method = request.method;
-  let url = request.url;
-  let body = [];
-  request.on('error', function(err) {
-    console.error(err);
-  }).on('data', function(chunk) {
-    body.push(chunk);
-  }).on('end', function() {
-    body = Buffer.concat(body).toString();
+  if (requestQueue.length > 0) {
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.writeHead(423, {'Content-Type': 'text/plain'});
+    response.write('423 Locked\n');
+    response.end();
+    return;
+  }
 
-    // prepare the information we need.
-    let slave_addr = undefined;
-    let function_code = undefined;
-    let register_addr = undefined;
-    let register_value = undefined;
+  // lock
+  requestQueue.push({
+    'slaveAddr': undefined,
+    'functionCode': undefined,
+    'registerAddr': undefined,
+    'registerValue': undefined,
+    'response': response
+  });
+
+  let body = [];
+  request.on('error', (err) => {
+    console.error(err);
+  }).on('data', (chunk) => {
+    body.push(chunk);
+  }).on('end', () => {
+    body = Buffer.concat(body).toString();
 
     // retrieve slave address and target register address from url
     let req = request.url.split('/');
     if (req.length == 3) {
-      slave_addr = parseInt(req[1], 16);
-      register_addr = parseInt(req[2], 16);
+      requestQueue[0].slaveAddr = parseInt(req[1], 16);
+      requestQueue[0].registerAddr = parseInt(req[2], 16);
     }
 
     // determine function by request method.
     if (request.method === 'GET') {
-
       // read holding register
-      function_code = 0x03;
-
+      requestQueue[0].functionCode = 0x03;
+      requestQueue[0].registerValue = 0x00;
     } else if (request.method === 'PUT') {
-
       // write single register
-      function_code = 0x06;
-
-      // if method is PUT, read register value from request body.
-      let json = JSON.parse(body);
-      register_value = json.value;
+      requestQueue[0].functionCode = 0x06;
+      try {
+        let json = JSON.parse(body);
+        requestQueue[0].registerValue = json.value;
+      } catch (err) {
+        console.error(err);
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.writeHead(400, {'Content-Type': 'text/plain'});
+        response.write('400 Bad Request\n');
+        response.end();
+        return;
+      }
+    } else {
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      response.writeHead(405, {'Content-Type': 'text/plain'});
+      response.write('405 Method Not Allowed\n');
+      response.end();
+      return;
     }
 
-    if (slave_addr !== undefined && function_code !== undefined && register_addr !== undefined) {
-      // service RESTful web services.
+    if (requestQueue[0].slaveAddr === undefined || requestQueue[0].registerAddr === undefined) {
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      response.writeHead(404, {'Content-Type': 'text/plain'});
+      response.write('404 Not Found\n');
+      response.end();
+      return;
+    } else {
 
       // prepare the binary data to be sent to MCU.
       let buffer = new Buffer(4);
-      buffer[0] = slave_addr;
-      buffer[1] = function_code;
-      buffer[2] = register_addr;
-      buffer[3] = register_value === undefined ? 0x00 : register_value;
+      buffer[0] = requestQueue[0].slaveAddr;
+      buffer[1] = requestQueue[0].functionCode;
+      buffer[2] = requestQueue[0].registerAddr;
+      buffer[3] = requestQueue[0].registerValue;
 
-      console.log('slave_addr: 0x%s function_code: 0x%s register_addr: 0x%s register_value: 0x%s',
+      console.log('slaveAddr: 0x%s functionCode: 0x%s registerAddr: 0x%s registerValue: 0x%s',
           buffer[0].toString(16), buffer[1].toString(16), buffer[2].toString(16), buffer[3].toString(16));
-
-      // remember if MCU has responsed already.
-      let hasResponsed = false;
 
       // send to MCU
       serial.write(buffer, (err) => {
@@ -98,49 +120,7 @@ const server = http.createServer((request, response) => {
           return console.log('Error on write: ', err.message);
         }
         console.log('packet sent.');
-      });
-
-      // process the response from MCU
-      serial.on('data', (data) => {
-
-        // collect response value as ascii string.
-        // if reading register success, the return value will be an integer (as ascii string)
-        // and is empty string if it failed.
-        // if writeing register success, the return value will be zero (as ascii string)
-        // and any non-zero value if failed.
-        let value = '';
-        for (let i = 0; i < data.length; i++) {
-          if (data[i] >= '0'.charCodeAt(0) && data[i] <= '9'.charCodeAt(0)) {
-            value += String.fromCharCode(data[i]);
-          }
-        }
-
-        // return the first response only since MCU may return more than once.
-        if (!hasResponsed) {
-          console.log('data received:', value);
-          response.writeHead(200, {'Content-Type': 'application/json'});
-          response.write('{ "value": ' + value + ' }');
-          response.end();
-          hasResponsed = true;
-        }
-      });
-    } else {
-
-      // Get path name on the server's file system.
-      let filename = '/root/index.html';
-
-      fs.exists(filename, (exists) => {
-        if (exists) {
-          // server static web content for quick test
-          response.writeHead(200, 'text/html');
-          let fileStream = fs.createReadStream(filename);
-          fileStream.pipe(response);
-        } else {
-          // no resource found and no static web content
-          response.writeHead(404, {'Content-Type': 'text/plain'});
-          response.write('404 Not Found\n');
-          response.end();
-        }
+        // now we wait for the response...
       });
     }
   });
@@ -156,7 +136,31 @@ serial.on('open', (err) => {
   console.log('serial port opened.');
 
   // Listen http port.
-  server.listen(HTTP_PORT, function(){
+  server.listen(HTTP_PORT, () => {
     console.log("%s HTTP Server listening on %s", new Date(), HTTP_PORT);
   });
 });
+
+serial.on('error', (err) => {
+  console.log('SerialPort Error: ', err.message);
+});
+
+// process the response from MCU
+serial.on('data', (data) => {
+
+  // the response will be one byte unsigned integer.
+  // if reading register success, the return value will be an integer
+  // and is 0xFF if it failed.
+  // if writeing register success, the return value will be 0x00
+  // and any non-zero value if failed.
+  requestQueue[0].response.setHeader("Access-Control-Allow-Origin", "*");
+  requestQueue[0].response.writeHead(200, {'Content-Type': 'application/json'});
+  requestQueue[0].response.write('{ "value": ' + data[0] + ' }');
+  requestQueue[0].response.end();
+
+  // unlock
+  let req = requestQueue.pop();
+  console.log('response to => slaveAddr: 0x%s functionCode: 0x%s registerAddr: 0x%s registerValue: 0x%s => value: %s',
+    req.slaveAddr, req.functionCode, req.registerAddr, req.registerValue, data[0]);
+});
+
