@@ -86,13 +86,25 @@ const server = http.createServer((request, response) => {
         response.writeHead(400, {'Content-Type': 'text/plain'});
         response.write('400 Bad Request\n');
         response.end();
+        requestQueue.pop();
         return;
       }
+    } else if (request.method === 'OPTIONS') {
+      // handle preflight
+      console.log('preflight header', request.headers);
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      response.setHeader("Access-Control-Allow-Methods", "GET, PUT");
+      response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      response.writeHead(200);
+      response.end();
+      requestQueue.pop();
+      return;
     } else {
       response.setHeader("Access-Control-Allow-Origin", "*");
       response.writeHead(405, {'Content-Type': 'text/plain'});
       response.write('405 Method Not Allowed\n');
       response.end();
+      requestQueue.pop();
       return;
     }
 
@@ -101,6 +113,7 @@ const server = http.createServer((request, response) => {
       response.writeHead(404, {'Content-Type': 'text/plain'});
       response.write('404 Not Found\n');
       response.end();
+      requestQueue.pop();
       return;
     } else {
 
