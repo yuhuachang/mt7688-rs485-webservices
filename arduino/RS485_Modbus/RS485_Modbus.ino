@@ -30,9 +30,9 @@
 
 // connection pins
 #define MAX485_RX 14
-#define MAX485_TX 16
 #define MAX485_DE 15
-#define MAX485_RE 15
+#define MAX485_RE 16
+#define MAX485_TX 17
 
 // led to indicate the action
 #define LED 13
