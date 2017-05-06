@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+
+#
+# 1. Put this file in /etc/init.d/ and name it "app"
+# 2. chmod 755 /etc/init.d/app
+# 3. /etc/init.d/app enable
+#    you should see S51app in /etc/rc.d
+#
+
+START=51
+
+start() {
+  /usr/bin/node --harmony /root/app.js
+}

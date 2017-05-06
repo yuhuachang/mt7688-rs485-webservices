@@ -6,6 +6,9 @@
   </head>
   <body>
 
+    AC Controller IP:
+    <input id="ip_addr" value="192.168.1.116" />
+
     Slave Address:
     <input id="slave_addr" value="1" />
 
@@ -176,7 +179,7 @@ function read_register(register_addr) {
       }
     }
   };
-  xmlhttp.open("GET", "/" + slave_addr.value + "/" + register_addr, true);
+  xmlhttp.open("GET", "http://" + ip_addr + ":8080/" + slave_addr.value + "/" + register_addr, true);
   xmlhttp.send();
 }
 
@@ -185,7 +188,7 @@ function write_register(register_addr) {
   var target = document.getElementById("value" + register_addr);
 
   var xmlhttp = new XMLHttpRequest();
-  xmlhttp.open("PUT", "/" + slave_addr.value + "/" + register_addr);
+  xmlhttp.open("PUT", "http://" + ip_addr + ":8080/" + slave_addr.value + "/" + register_addr);
   xmlhttp.setRequestHeader("Content-Type", "application/json");
   xmlhttp.send(JSON.stringify(
     { "value": target.value }
