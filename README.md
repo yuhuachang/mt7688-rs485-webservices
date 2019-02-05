@@ -14,20 +14,37 @@ This build this project, you need:
 2) RS-485 module for Arduino (MAX485)
    * http://yourduino.com/sunshop//index.php?l=product_detail&p=323
    * https://www.taiwaniot.com.tw/shop/module-sensor/%E7%94%A8%E6%88%B6%E4%BB%8B%E9%9D%A2%E8%BC%B8%E5%85%A5%E8%BC%B8%E5%87%BA/ttl-to-rs485rs422-max485-module/
+3) RC-RO1XT - Hitachi RS485 Controller
 
 ### Wiring:
-   * VCC -> 5V (connect to 7688)
-   * GND -> GND (connect to 7688)
-   * A ---> RS485 A (RS485 line)
-   * B ---> RS485 B (RS485 line)
-   * DI --> MAX485_TX (connect to any digital pin on 7688)
-   * DE --> MAX485_DE (connect to any digital pin on 7688)
-   * RE --> MAX485_RE (connect to any digital pin on 7688)
-   * RO --> MAX485_RX (connect to any digital pin on 7688)
- 
+Name      | MAX485 Pin | 7688 Pin | Desc
+--------- | ---------- | -------- | ----
+5V        | VCC        | 5V       |
+GND       | GND        | GND      |
+RS485 A   | A          |          | connect to RS485 bus
+RS485 B   | B          |          | connect to RS485 bus
+MAX485_TX | DI         | D17      |
+MAX485_DE | DE         | D15      |
+MAX485_RE | RE         | D16      |
+MAX485_RX | RO         | D14      |
+
 ### To be able to compile the Arduino code, you need:
 1) Download the whole project in zip format from [here](https://github.com/4-20ma/ModbusMaster)
 2) In Arduino, Sketch -> Include Library -> Add .zip library and add the zip file.
+
+## Final Results
+
+### MT7688 Control Box
+![mt7688-control-box](https://yuhuachang.github.io/repo/mt7688-rs485-webservices/mt7688-control-box.jpeg)
+
+### RS485 Wiring
+![rs485-controller-wiring](https://yuhuachang.github.io/repo/mt7688-rs485-webservices/rs485-controller-wiring.jpeg)
+
+### Finish
+![mt7688-rs485-system-setup](https://yuhuachang.github.io/repo/mt7688-rs485-webservices/mt7688-rs485-system-setup.jpeg)
+
+### Control Cable
+![rs485-control-cable](https://yuhuachang.github.io/repo/mt7688-rs485-webservices/rs485-control-cable.jpeg)
 
 ## Reference, Example, and Source:
 1) https://github.com/4-20ma/ModbusMaster
