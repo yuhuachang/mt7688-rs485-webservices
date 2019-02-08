@@ -85,19 +85,29 @@ Resgister Address | Item | Resgister Value
 0x2E | Beeper On/Off        | 0: Enable<br>1: Disable
 
 ### Sample REST Calls
-- Read current temperature on unit 2
+#### Read current temperature on unit 2
+Request
 ```
-λ curl -X GET http://<ip-address>:8080/2/0x00
+curl -X GET http://<ip-address>:8080/2/0x00
+```
+Response
+```
 { "value": 24 }
 ```
-- Read current power status on unit 2
+
+#### Read current power status on unit 2
+Request
 ```
-λ curl -X GET http://<ip-address>:8080/2/0x20
+curl -X GET http://<ip-address>:8080/2/0x20
+```
+Response
+```
 { "value": 0 }
 ```
-- Turn unit 2 On.
+
+#### Turn unit 2 On.
 ```
-λ curl -X PUT -H "Content-Type: application/json" -d "{\"value\": 1}" http://<ip-address>:8080/2/0x20
+curl -X PUT -H "Content-Type: application/json" -d "{\"value\": 1}" http://<ip-address>:8080/2/0x20
 ```
 
 ## Reference, Example, and Source:
