@@ -32,6 +32,14 @@ MAX485_RX | RO         | D14      |
 1) Download the whole project in zip format from [here](https://github.com/4-20ma/ModbusMaster)
 2) In Arduino, Sketch -> Include Library -> Add .zip library and add the zip file.
 
+### Control Modbus on Arduino side.
+By using this library in our Arduino side code, we contrl the Modbus devices by SoftwareSerial.
+
+### Communicate Arduino side by serial port.
+We talk to the Arduino side by open serial port `/dev/ttyS0`.
+
+The OpenWRT side is basically a web service taking REST call and send the request to Arduino side.
+
 ## Final Results
 
 ### MT7688 Control Box
@@ -45,6 +53,52 @@ MAX485_RX | RO         | D14      |
 
 ### Control Cable
 ![rs485-control-cable](https://yuhuachang.github.io/repo/mt7688-rs485-webservices/rs485-control-cable.jpeg)
+
+## Operation
+The basic operation is to control the Modbus devices by web service calls.
+
+The Modbus devices takes four parameters:
+1. Slave Address
+   - In Modbus protocol topography requires each units on the bus to have a unique id (an integer value).
+   - This id is set (by jumper) in the RC-RO1XT, the Hitachi RS485 Controller.
+2. Function Code
+   - 0x03 -> Read
+   - 0x06 -> Write
+3. Resgister Address
+4. Resgister Value
+
+### Register Chart
+
+Resgister Address | Item | Resgister Value
+----------------- | ---- | ---------------
+0x00 | Current Temperature  | Celsius (Read Only)
+0x20 | Power                | 0: OFF<br>1: ON
+0x21 | Operational Mode     | 0: Cooling<br>1: Dehumidify<br>2: Fan Only<br>3: Auto<br>4: Heating
+0x22 | Fan Speed            | 5: Auto<br>4: High<br>3: Mid<br>1: Low<br>7: Quiet
+0x23 | Target Temperature   | Range 16℃ - 32℃
+0x24 | Sleep Mode           | 0: OFF<br>Others: minutes in sleep mode (1~1440)
+0x25 | Fuzzy Mode           | 0: OFF<br>1: ON
+0x29 | Auto On/Off Timer    | 0: OFF<br>Others: minutes (1~1440)
+0x2A | Air Flow Up/Down     | 0: OFF<br>Others: angle
+0x2B | Air Flow Left/Right  | 0: OFF<br>Others: angle
+0x2D | Remote Control On/Off| 0: Enable<br>1: Disable
+0x2E | Beeper On/Off        | 0: Enable<br>1: Disable
+
+### Sample REST Calls
+- Read current temperature on unit 2
+```
+λ curl -X GET http://<ip-address>:8080/2/0x00
+{ "value": 24 }
+```
+- Read current power status on unit 2
+```
+λ curl -X GET http://<ip-address>:8080/2/0x20
+{ "value": 0 }
+```
+- Turn unit 2 On.
+```
+λ curl -X PUT -H "Content-Type: application/json" -d "{\"value\": 1}" http://<ip-address>:8080/2/0x20
+```
 
 ## Reference, Example, and Source:
 1) https://github.com/4-20ma/ModbusMaster
